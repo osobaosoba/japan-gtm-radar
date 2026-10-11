@@ -1,0 +1,42 @@
+{
+  "_comment": "判定ルールと閾値。npm run calibrate で検証データ(data/validation/labeled.json)に対する精度を見て調整する。questionSetVersion を変えると同じ証拠でも再判定される。",
+  "questionSetVersion": "gtm-q-2026.10.2",
+  "thresholds": {
+    "targetCompanyMin": 0.7,
+    "targetCompanyReviewBand": 0.2,
+    "japanRelevantMin": 0.5,
+    "signalPresentMin": 0.55,
+    "signalReviewBand": 0.15,
+    "statusConfidenceMin": 0.35,
+    "stageConfidenceMin": 0.35,
+    "motionMin": 0.6,
+    "jobJapanRoleMin": 0.5,
+    "dedicatedTeamMin": 0.6,
+    "duplicateSimilarity": 0.85,
+    "staleDays": 365,
+    "meaningfulDiffMinChars": 40
+  },
+  "limits": {
+    "nimbleCallsPerRun": 80,
+    "nimbleCallsPerDay": 400,
+    "jevCallsPerRun": 400,
+    "jevCallsPerDay": 2000,
+    "concurrency": 5,
+    "minIntervalMs": 300,
+    "nimbleTimeoutMs": 90000,
+    "jevTimeoutMs": 30000,
+    "maxRetries": 2,
+    "maxStateChars": 9000,
+    "maxJobsJudgedPerSource": 12
+  },
+  "discovery": {
+    "maxResultsPerQuery": 6,
+    "country": "JP",
+    "locale": "ja",
+    "searchDepth": "lite",
+    "queryTemplates": [
+      "{name} 日本 AI",
+      "{name} 日本 提携 OR 導入 OR 東京"
+    ]
+  }
+}
