@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/osobaosoba/japan-gtm-radar#readme",
   "dependencies": {
+    "@fontsource/noto-sans-jp": "^5.3.1",
     "@nimble-way/nimble-js": "^1.5.0",
     "@prisma/client": "^6.19.3",
     "@typesafe-ai/sdk": "^0.6.0",

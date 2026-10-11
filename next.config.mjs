@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["@prisma/client", "@nimble-way/nimble-js", "@typesafe-ai/sdk"],
+  serverExternalPackages: ["@nimble-way/nimble-js", "@typesafe-ai/sdk"],
+  devIndicators: false,
 };
 export default nextConfig;
