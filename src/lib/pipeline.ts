@@ -1,7 +1,7 @@
 import { judgingConfig, seedCompanies } from "./config";
-import { canonicalUrl, diffLines, excerptAround, fingerprint, normalizeText, parsePublishedDate, selectRelevantText, similarity } from "./normalize";
+import { canonicalUrl, diffLines, excerptAround, normalizeText, parsePublishedDate, selectRelevantText, similarity } from "./normalize";
 import { diffJobs, parseAshbyJobs } from "./jobs";
-import { diffEntities, matchesCompany, parseHoujinSearch, type RegistryEntity } from "./registry";
+import { diffEntities, matchesCompany, parseHoujinSearch, type RegistryEntity, isEmptyHoujinResult } from "./registry";
 import { SIGNALS, STATUS_RANK, SIGNAL_EN, STATUS_EN, STAGE_EN, type Signal, type SignalStatus } from "./labels";
 import { companyAssessmentQuestions, DIFF_QUESTION, evidenceClassificationQuestions, signalDetailQuestions } from "./questions";
 import type { FetchProvider, JudgeAnswer, JudgeProvider, JudgeQuestion } from "./providers/types";
@@ -100,7 +100,14 @@ export async function monitorSource(s: Store, src: SourceRec, fetch: FetchProvid
   let jobs: ReturnType<typeof parseAshbyJobs> | null = null;
   let entities: RegistryEntity[] | null = null;
   if (src.format === "houjin_search") {
-    entities = parseHoujinSearch(r.text).filter((e) => matchesCompany(e, [company.name, ...(company.aliases ?? [])], company.excludeTerms ?? []));
+    const parsed = parseHoujinSearch(r.text);
+    if (!parsed.length && !isEmptyHoujinResult(r.text)) {
+      // 結果ページとして読めない応答を空のスナップショットにすると、次の正常な取得で全法人が「新規」に見えてしまう
+      src.lastError = "parse_error: unrecognized houjin.jp page";
+      s.fetchRuns.push({ id: runId, companySlug: src.companySlug, sourceId: src.id, kind: "monitor", provider: fetch.name, request: { url: src.url }, status: "error", httpStatus: r.httpStatus, error: "houjin.jp parse error", startedAt, finishedAt: now() });
+      return { status: "error" as const };
+    }
+    entities = parsed.filter((e) => matchesCompany(e, [company.name, ...(company.aliases ?? [])], company.excludeTerms ?? []));
     norm = entities.map(entityLine).sort().join("\n");
   } else if (src.format === "ashby_json") {
     try {
@@ -264,7 +271,7 @@ export async function judgeEvidence(s: Store, ev: EvidenceRec, judge: JudgeProvi
     addFeed(s, { companySlug: ev.companySlug, type: "discovery", title: `New source found: ${ev.title}`, summary: ev.excerpt, signal: present[0], evidenceId: ev.id, url: ev.url, dedupeKey: `discovery:${ev.canonicalUrl}`, occurredAt: ev.fetchedAt });
 }
 
-function buildSignal(ev: EvidenceRec, sg: Signal, presentProb: number, ans: Record<string, JudgeAnswer>, judgmentIds: string[]): SignalRec | null {
+export function buildSignal(ev: EvidenceRec, sg: Signal, presentProb: number, ans: Record<string, JudgeAnswer>, judgmentIds: string[]): SignalRec | null {
   const st = c(ans[`st_${sg}`]);
   let status = (st?.choice ?? "executed") as SignalStatus;
   const notes: string[] = [];
@@ -276,7 +283,6 @@ function buildSignal(ev: EvidenceRec, sg: Signal, presentProb: number, ans: Reco
       detail.japan_role = n(ans.job_japan_role); detail.japanese_required = n(ans.job_japanese_required);
       if (status === "continued_expanded") status = "executed";
       if (ev.origin === "job_posting" && status === "intent_plan") status = "executed";
-      if (ev.origin === "registry" && status === "intent_plan") status = "executed";
       notes.push("A job posting shows hiring intent/activity, not a completed hire. / 求人掲載は採用完了ではない");
       if (n(ans.job_japan_role) < T.jobJapanRoleMin) reasons.push("Unclear whether the role covers Japan");
       break;
@@ -307,7 +313,11 @@ function buildSignal(ev: EvidenceRec, sg: Signal, presentProb: number, ans: Reco
       break;
     }
     case "media_visit": detail.media_kind = d("media_kind"); if (d("media_kind") === "secondhand") reasons.push("Second-hand coverage, not a direct interview"); break;
-    case "local_presence": detail.presence_kind = d("presence_kind"); if (d("presence_kind") === "plan_only") status = "intent_plan"; break;
+    case "local_presence":
+      detail.presence_kind = d("presence_kind");
+      if (ev.origin === "registry") { if (status === "intent_plan") status = "executed"; } // 登記は計画ではなく実行済み
+      else if (d("presence_kind") === "plan_only") status = "intent_plan";
+      break;
     case "ads": detail.ad_targeted = n(ans.ad_targeted); break;
   }
   if (presentProb < T.signalPresentMin + T.signalReviewBand && presentProb >= T.signalPresentMin - T.signalReviewBand) reasons.push(`Signal presence is borderline (${presentProb.toFixed(2)})`);
