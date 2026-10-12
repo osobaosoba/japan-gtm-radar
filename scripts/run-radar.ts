@@ -12,7 +12,7 @@ async function main() {
   resetRunBudget();
   const s = loadStore();
   const t0 = Date.now();
-  const run = await runPipeline(s, getProviders({ demoRound: round }), { companies, discover: !args.includes("--no-discover"), trigger: args.includes("--weekly") ? "weekly" : "manual" });
+  const run = await runPipeline(s, getProviders({ demoRound: round }), { companies, discover: !args.includes("--no-discover"), trigger: args.includes("--weekly") ? "weekly" : "manual", force: args.includes("--force") });
   saveStore(s);
   console.log(JSON.stringify({ mode: getMode(), run: run.status, stats: run.stats, calls: usageSnapshot(), seconds: Math.round((Date.now() - t0) / 1000) }));
   for (const a of s.assessments.slice(-5)) console.log(a.companySlug, a.stage, a.motions.join("|"), Object.entries(a.signalStatus).filter(([, v]) => v.status !== "unconfirmed").map(([k, v]) => `${k}=${v.status}`).join(" "));

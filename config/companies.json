@@ -12,7 +12,8 @@
       "sources": [
         { "url": "https://sierra.ai/jp", "label": "公式サイト（日本語）", "kind": "official_page", "reliability": "official" },
         { "url": "https://api.ashbyhq.com/posting-api/job-board/sierra-jp", "label": "求人（Ashby: sierra-jp）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" },
-        { "url": "https://api.ashbyhq.com/posting-api/job-board/Sierra", "label": "求人（Ashby: Sierra 全体）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" }
+        { "url": "https://api.ashbyhq.com/posting-api/job-board/Sierra", "label": "求人（Ashby: Sierra 全体）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" },
+        { "url": "https://houjin.jp/search?keyword=Sierra", "label": "法人登記（法人番号公表サイトのデータ）", "kind": "corporate_registry", "format": "houjin_search", "reliability": "primary_third_party" }
       ]
     },
     {
@@ -25,7 +26,8 @@
       "excludeTerms": ["Corgi Labs", "コーギー犬", "Corgi Toys"],
       "sources": [
         { "url": "https://www.corgi.insure/", "label": "公式サイト", "kind": "official_page", "reliability": "official" },
-        { "url": "https://www.corgi.insure/careers", "label": "採用ページ", "kind": "careers_page", "reliability": "official" }
+        { "url": "https://www.corgi.insure/careers", "label": "採用ページ", "kind": "careers_page", "reliability": "official" },
+        { "url": "https://houjin.jp/search?keyword=Corgi", "label": "法人登記（法人番号公表サイトのデータ）", "kind": "corporate_registry", "format": "houjin_search", "reliability": "primary_third_party" }
       ]
     },
     {
@@ -38,7 +40,8 @@
       "excludeTerms": ["usebraintrust", "BTRST", "Braintrust talent", "フリーランス人材"],
       "sources": [
         { "url": "https://www.braintrust.dev/", "label": "公式サイト", "kind": "official_page", "reliability": "official" },
-        { "url": "https://api.ashbyhq.com/posting-api/job-board/Braintrust", "label": "求人（Ashby: Braintrust）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" }
+        { "url": "https://api.ashbyhq.com/posting-api/job-board/Braintrust", "label": "求人（Ashby: Braintrust）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" },
+        { "url": "https://houjin.jp/search?keyword=Braintrust", "label": "法人登記（法人番号公表サイトのデータ）", "kind": "corporate_registry", "format": "houjin_search", "reliability": "primary_third_party" }
       ]
     },
     {
@@ -51,7 +54,8 @@
       "excludeTerms": ["Cohere Health", "Cohere Technologies"],
       "sources": [
         { "url": "https://cohere.com/ja", "label": "公式サイト（日本語）", "kind": "official_page", "reliability": "official" },
-        { "url": "https://api.ashbyhq.com/posting-api/job-board/cohere", "label": "求人（Ashby: cohere）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" }
+        { "url": "https://api.ashbyhq.com/posting-api/job-board/cohere", "label": "求人（Ashby: cohere）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" },
+        { "url": "https://houjin.jp/search?keyword=Cohere", "label": "法人登記（法人番号公表サイトのデータ）", "kind": "corporate_registry", "format": "houjin_search", "reliability": "primary_third_party" }
       ]
     },
     {
@@ -64,7 +68,8 @@
       "excludeTerms": [],
       "sources": [
         { "url": "https://elevenlabs.io/ja", "label": "公式サイト（日本語）", "kind": "official_page", "reliability": "official" },
-        { "url": "https://api.ashbyhq.com/posting-api/job-board/elevenlabs", "label": "求人（Ashby: elevenlabs）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" }
+        { "url": "https://api.ashbyhq.com/posting-api/job-board/elevenlabs", "label": "求人（Ashby: elevenlabs）", "kind": "careers_ats", "format": "ashby_json", "reliability": "official" },
+        { "url": "https://houjin.jp/search?keyword=ElevenLabs", "label": "法人登記（法人番号公表サイトのデータ）", "kind": "corporate_registry", "format": "houjin_search", "reliability": "primary_third_party" }
       ]
     }
   ]

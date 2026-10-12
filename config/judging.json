@@ -38,5 +38,10 @@
       "{name} 日本 AI",
       "{name} 日本 提携 OR 導入 OR 東京"
     ]
+  },
+  "monitoring": {
+    "_comment": "情報源の種類ごとの監視間隔（時間）。変わっていない情報源はJevに回さないので、間隔を短くしても増えるのは主にNimbleの取得だけ",
+    "defaultIntervalHours": 168,
+    "intervalHoursByKind": { "corporate_registry": 24, "careers_ats": 24 }
   }
 }

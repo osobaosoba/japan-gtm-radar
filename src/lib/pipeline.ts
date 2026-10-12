@@ -1,6 +1,7 @@
 import { judgingConfig, seedCompanies } from "./config";
 import { canonicalUrl, diffLines, excerptAround, fingerprint, normalizeText, parsePublishedDate, selectRelevantText, similarity } from "./normalize";
 import { diffJobs, parseAshbyJobs } from "./jobs";
+import { diffEntities, matchesCompany, parseHoujinSearch, type RegistryEntity } from "./registry";
 import { SIGNALS, STATUS_RANK, SIGNAL_EN, STATUS_EN, STAGE_EN, type Signal, type SignalStatus } from "./labels";
 import { companyAssessmentQuestions, DIFF_QUESTION, evidenceClassificationQuestions, signalDetailQuestions } from "./questions";
 import type { FetchProvider, JudgeAnswer, JudgeProvider, JudgeQuestion } from "./providers/types";
@@ -11,6 +12,18 @@ const T = judgingConfig.thresholds;
 const L = judgingConfig.limits;
 const V = judgingConfig.questionSetVersion;
 const now = () => new Date().toISOString();
+const M = judgingConfig.monitoring;
+
+export function intervalHoursFor(kind: string): number {
+  return (M.intervalHoursByKind as Record<string, number>)[kind] ?? M.defaultIntervalHours;
+}
+
+/** 前回の取得から監視間隔が過ぎた情報源だけ取りに行く（失敗した情報源は次の実行で再試行） */
+export function isDue(src: SourceRec, at: Date = new Date()): boolean {
+  if (!src.lastAttemptAt || src.lastError) return true;
+  const hours = src.intervalHours ?? intervalHoursFor(src.kind);
+  return at.getTime() - new Date(src.lastAttemptAt).getTime() >= hours * 3600_000 - 60_000;
+}
 
 export function seedStore(s: Store) {
   for (const c of seedCompanies) {
@@ -21,7 +34,18 @@ export function seedStore(s: Store) {
         s.sources.push({ id: newId("src"), companySlug: c.slug, url: src.url, label: src.label, kind: src.kind, format: (src as { format?: string }).format ?? "markdown", reliability: src.reliability, origin: "seed", status: "active", consecutiveFailures: 0 });
     }
   }
+  for (const src of s.sources) src.intervalHours ??= intervalHoursFor(src.kind);
 }
+
+const entityLine = (e: RegistryEntity) => [e.corporateNumber, e.name, e.address, e.eventDate ?? "", e.event, e.url, e.contentHash].join("\t");
+function entitiesFromSnapshot(text: string): RegistryEntity[] {
+  return text.split("\n").filter(Boolean).map((l) => {
+    const [corporateNumber, name, address, eventDate, event, url, contentHash] = l.split("\t");
+    return { corporateNumber, name, address, eventDate: eventDate || null, event, url, contentHash };
+  });
+}
+const registryContent = (e: RegistryEntity) =>
+  `Japanese corporate registry record (National Tax Agency corporate number data, via houjin.jp)\nRegistered name: ${e.name}\nCorporate number: ${e.corporateNumber}\nRegistered address: ${e.address}\nLatest registry event: ${e.eventDate ?? "unknown"} ${e.event}`;
 
 function addFeed(s: Store, f: Omit<import("./store").FeedRec, "id">) {
   if (s.feed.some((x) => x.dedupeKey === f.dedupeKey)) return;
@@ -74,7 +98,11 @@ export async function monitorSource(s: Store, src: SourceRec, fetch: FetchProvid
 
   let norm: string;
   let jobs: ReturnType<typeof parseAshbyJobs> | null = null;
-  if (src.format === "ashby_json") {
+  let entities: RegistryEntity[] | null = null;
+  if (src.format === "houjin_search") {
+    entities = parseHoujinSearch(r.text).filter((e) => matchesCompany(e, [company.name, ...(company.aliases ?? [])], company.excludeTerms ?? []));
+    norm = entities.map(entityLine).sort().join("\n");
+  } else if (src.format === "ashby_json") {
     try {
       jobs = parseAshbyJobs(r.text);
     } catch (e) {
@@ -96,6 +124,16 @@ export async function monitorSource(s: Store, src: SourceRec, fetch: FetchProvid
   s.snapshots.push(snap);
   s.fetchRuns.push({ id: runId, companySlug: src.companySlug, sourceId: src.id, kind: "monitor", provider: fetch.name, request: { url: src.url }, status: "success", httpStatus: r.httpStatus, taskId: r.taskId, snapshotId: snap.id, resultCount: jobs?.length, startedAt, finishedAt: now() });
   const baseline = !prev;
+
+  if (entities) {
+    const d = baseline ? { added: entities, changed: [] as RegistryEntity[] } : diffEntities(entitiesFromSnapshot(prev!.normalizedText), entities);
+    for (const e of [...d.added, ...d.changed]) {
+      const { ev } = addEvidence(s, { companySlug: src.companySlug, sourceId: src.id, snapshotId: snap.id, origin: "registry", url: e.url, title: `${e.name}（法人番号 ${e.corporateNumber}）`, excerpt: `${e.eventDate ?? ""} ${e.event} — ${e.address}`.trim(), content: registryContent(e), publishedAt: e.eventDate, fetchedAt: snap.fetchedAt, reliability: src.reliability, fingerprint: `registry:${e.corporateNumber}:${e.contentHash}`, isBaseline: baseline });
+      if (!baseline) addFeed(s, { companySlug: src.companySlug, type: "registry_entity_added", title: `Japanese entity in registry: ${e.name}`, summary: `${e.eventDate ?? ""} ${e.event}. ${e.address}. Could be a same-name company — Jev and human review decide the match.`, signal: "local_presence", evidenceId: ev.id, url: e.url, before: d.added.includes(e) ? "(not listed)" : undefined, after: `${e.name} — ${e.corporateNumber}`, dedupeKey: `registry:${src.id}:${e.corporateNumber}:${e.contentHash}`, occurredAt: snap.fetchedAt });
+    }
+    if (baseline) addFeed(s, { companySlug: src.companySlug, type: "baseline", title: `Started monitoring ${src.label}`, summary: `${entities.length} registered entities match the name. First snapshot — no past changes are inferred.`, url: src.url, dedupeKey: `baseline:${src.id}`, occurredAt: snap.fetchedAt });
+    return { status: "success" as const };
+  }
 
   if (jobs) {
     const openPrev = s.jobs.filter((j) => j.sourceId === src.id && j.status === "open");
@@ -238,6 +276,7 @@ function buildSignal(ev: EvidenceRec, sg: Signal, presentProb: number, ans: Reco
       detail.japan_role = n(ans.job_japan_role); detail.japanese_required = n(ans.job_japanese_required);
       if (status === "continued_expanded") status = "executed";
       if (ev.origin === "job_posting" && status === "intent_plan") status = "executed";
+      if (ev.origin === "registry" && status === "intent_plan") status = "executed";
       notes.push("A job posting shows hiring intent/activity, not a completed hire. / 求人掲載は採用完了ではない");
       if (n(ans.job_japan_role) < T.jobJapanRoleMin) reasons.push("Unclear whether the role covers Japan");
       break;
@@ -384,13 +423,17 @@ export async function assessCompany(s: Store, company: CompanyRec, judge: JudgeP
   return rec;
 }
 
-export async function runPipeline(s: Store, p: { fetch: FetchProvider; judge: JudgeProvider }, opts: { companies?: string[]; discover?: boolean; trigger?: string } = {}) {
+export async function runPipeline(s: Store, p: { fetch: FetchProvider; judge: JudgeProvider }, opts: { companies?: string[]; discover?: boolean; trigger?: string; force?: boolean; at?: Date } = {}) {
   seedStore(s);
   const run = { id: newId("run"), trigger: opts.trigger ?? "manual", startedAt: now(), status: "running", stats: {} as Record<string, unknown> };
   s.runs.push(run);
+  let skipped = 0;
   const companies = s.companies.filter((x) => !opts.companies?.length || opts.companies.includes(x.slug));
   await Promise.all(companies.map(async (co) => {
-    for (const src of s.sources.filter((x) => x.companySlug === co.slug && x.status === "active")) await monitorSource(s, src, p.fetch);
+    for (const src of s.sources.filter((x) => x.companySlug === co.slug && x.status === "active")) {
+      if (!opts.force && !isDue(src, opts.at)) { skipped++; continue; }
+      await monitorSource(s, src, p.fetch);
+    }
     if (opts.discover !== false) await discoverCompany(s, co, p.fetch);
     const pending = s.evidence.filter((e) => e.companySlug === co.slug && !e.duplicateOfId && e.judgedVersion !== V);
     await Promise.all(pending.map((e) => judgeEvidence(s, e, p.judge)));
@@ -398,6 +441,6 @@ export async function runPipeline(s: Store, p: { fetch: FetchProvider; judge: Ju
   }));
   run.status = s.fetchRuns.some((f) => f.startedAt >= run.startedAt && f.status === "error") ? "partial" : "success";
   (run as { finishedAt?: string }).finishedAt = now();
-  run.stats = { evidence: s.evidence.length, signals: s.signals.length, feed: s.feed.length };
+  run.stats = { sourcesSkippedNotDue: skipped, evidence: s.evidence.length, signals: s.signals.length, feed: s.feed.length };
   return run;
 }
