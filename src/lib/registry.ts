@@ -38,3 +38,8 @@ export function diffEntities(prev: RegistryEntity[], next: RegistryEntity[]) {
   const changed = next.filter((e) => before.has(e.corporateNumber) && before.get(e.corporateNumber)!.contentHash !== e.contentHash);
   return { added, changed };
 }
+
+/** houjin.jp の「該当なし」の結果ページか（全0件）。読めないページと区別する */
+export function isEmptyHoujinResult(markdown: string): boolean {
+  return /全\s*0\s*件/.test(markdown);
+}

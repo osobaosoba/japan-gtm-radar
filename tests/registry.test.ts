@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { diffEntities, matchesCompany, parseHoujinSearch } from "@/lib/registry";
-import { intervalHoursFor, isDue, monitorSource, seedStore } from "@/lib/pipeline";
+import { buildSignal, intervalHoursFor, isDue, monitorSource, seedStore } from "@/lib/pipeline";
 import { emptyStore, type SourceRec } from "@/lib/store";
 import type { FetchProvider } from "@/lib/providers/types";
 
@@ -86,5 +86,36 @@ describe("registry monitoring", () => {
     expect(added[0]).toMatchObject({ signal: "local_presence", url: "https://houjin.jp/c/5010403038813" });
     const ev = s.evidence.find((e) => e.id === added[0].evidenceId)!;
     expect(ev).toMatchObject({ origin: "registry", isBaseline: false, publishedAt: "2026-08-12", relevance: "pending" });
+  });
+
+  it("treats an unreadable registry page as a fetch error, not an empty snapshot", async () => {
+    const s = emptyStore("demo");
+    seedStore(s);
+    const reg = s.sources.find((x) => x.companySlug === "corgi" && x.format === "houjin_search")!;
+    let page = "<html>Service temporarily unavailable</html>";
+    const p = provider(() => page);
+    expect((await monitorSource(s, reg, p)).status).toBe("error");
+    expect(s.snapshots.filter((x) => x.sourceId === reg.id)).toHaveLength(0);
+    expect(reg.lastError).toMatch(/parse_error/);
+
+    page = md;
+    expect((await monitorSource(s, reg, p)).status).toBe("success");
+    expect(s.evidence.filter((e) => e.origin === "registry").every((e) => e.isBaseline)).toBe(true);
+    expect(s.feed.filter((f) => f.type === "registry_entity_added")).toHaveLength(0);
+
+    page = "の企業一覧\n\n1\\-0件を表示\n\n全0件";
+    expect((await monitorSource(s, reg, p)).status).toBe("success");
+  });
+});
+
+describe("buildSignal for registry evidence", () => {
+  it("never keeps a registration as a plan", () => {
+    const ev = { id: "ev1", companySlug: "corgi", origin: "registry", url: "https://houjin.jp/c/1", canonicalUrl: "https://houjin.jp/c/1", title: "t", excerpt: "", content: "", fetchedAt: new Date().toISOString(), reliability: "primary_third_party", fingerprint: "f", relevance: "relevant", isBaseline: false, publishedAt: null };
+    const ans = {
+      st_local_presence: { type: "choice", choice: "intent_plan", confidence: 0.9 },
+      presence_kind: { type: "choice", choice: "plan_only", confidence: 0.9 },
+    } as never;
+    expect(buildSignal(ev, "local_presence", 0.9, ans, [])?.status).toBe("executed");
+    expect(buildSignal({ ...ev, origin: "page" }, "local_presence", 0.9, ans, [])?.status).toBe("intent_plan");
   });
 });
