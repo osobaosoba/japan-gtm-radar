@@ -81,6 +81,7 @@ export const ORIGIN_LABEL: Record<string, string> = {
   job_posting: "求人票",
   job_closed: "求人掲載終了",
   discovery: "検索で発見",
+  registry: "法人登記",
 };
 
 export const FEED_TYPE_LABEL: Record<string, string> = {
@@ -95,6 +96,7 @@ export const FEED_TYPE_LABEL: Record<string, string> = {
   discovery: "新しい情報源を発見",
   fetch_error: "取得エラー",
   stage_changed: "推定GTM段階が変化",
+  registry_entity_added: "日本法人の登記を検知",
 };
 
 export const SIGNAL_EN: Record<Signal, string> = {
