@@ -1,8 +1,9 @@
+import type { ClayRunRec } from "./clay/types";
 import fs from "node:fs";
 import path from "node:path";
 import { getMode, type AppMode } from "./mode";
 
-export interface CompanyRec { slug: string; name: string; website: string; category: string; disambiguation: string; aliases: string[]; excludeTerms: string[] }
+export interface CompanyRec { slug: string; name: string; website: string; category: string; categoryEn?: string; disambiguation: string; aliases: string[]; excludeTerms: string[] }
 export interface SourceRec { id: string; companySlug: string; url: string; label: string; kind: string; format: string; reliability: string; origin: string; status: string; lastAttemptAt?: string; lastSuccessAt?: string; lastError?: string; consecutiveFailures: number; lastHttpStatus?: number | null; intervalHours?: number }
 export interface FetchRunRec { id: string; companySlug: string; sourceId?: string; kind: "discovery" | "monitor"; provider: string; request: Record<string, unknown>; status: "success" | "unchanged" | "error"; httpStatus?: number | null; taskId?: string | null; error?: string; resultCount?: number; snapshotId?: string; startedAt: string; finishedAt: string }
 export interface SnapshotRec { id: string; sourceId: string; url: string; normalizedText: string; normalizedHash: string; contentHash: string; fetchedAt: string }
@@ -29,9 +30,10 @@ export interface Store {
   jobs: JobRec[];
   reviews: ReviewRec[];
   runs: RunRec[];
+  clayRuns: ClayRunRec[];
 }
 
-export const emptyStore = (mode: AppMode): Store => ({ mode, companies: [], sources: [], fetchRuns: [], snapshots: [], evidence: [], judgments: [], signals: [], assessments: [], feed: [], jobs: [], reviews: [], runs: [] });
+export const emptyStore = (mode: AppMode): Store => ({ mode, companies: [], sources: [], fetchRuns: [], snapshots: [], evidence: [], judgments: [], signals: [], assessments: [], feed: [], jobs: [], reviews: [], runs: [], clayRuns: [] });
 
 /** demo と live は別ファイル。混在しない */
 export function storePath(mode: AppMode = getMode()) {
@@ -41,7 +43,7 @@ export function storePath(mode: AppMode = getMode()) {
 export function loadStore(mode: AppMode = getMode()): Store {
   const p = storePath(mode);
   if (!fs.existsSync(p)) return emptyStore(mode);
-  return { ...emptyStore(mode), ...(JSON.parse(fs.readFileSync(p, "utf8")) as Store) };
+  return { ...emptyStore(mode), ...(JSON.parse(fs.readFileSync(p, "utf8")) as Store), mode };
 }
 
 export function saveStore(s: Store) {

@@ -28,7 +28,7 @@ export function isDue(src: SourceRec, at: Date = new Date()): boolean {
 export function seedStore(s: Store) {
   for (const c of seedCompanies) {
     if (!s.companies.find((x) => x.slug === c.slug))
-      s.companies.push({ slug: c.slug, name: c.name, website: c.website, category: c.category, disambiguation: c.disambiguation, aliases: c.aliases, excludeTerms: c.excludeTerms });
+      s.companies.push({ slug: c.slug, name: c.name, website: c.website, category: c.category, categoryEn: c.categoryEn, disambiguation: c.disambiguation, aliases: c.aliases, excludeTerms: c.excludeTerms });
     for (const src of c.sources) {
       if (!s.sources.find((x) => x.companySlug === c.slug && x.url === src.url))
         s.sources.push({ id: newId("src"), companySlug: c.slug, url: src.url, label: src.label, kind: src.kind, format: (src as { format?: string }).format ?? "markdown", reliability: src.reliability, origin: "seed", status: "active", consecutiveFailures: 0 });

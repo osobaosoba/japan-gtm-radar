@@ -1,0 +1,14 @@
+{
+  "_comment": "Your startup profile for live mode. Pick peers from the companies the Radar monitors (slugs). proofPoints: facts only (empty = placeholder). oneLinerJa is used in the Japanese draft.",
+  "id": "self",
+  "name": "",
+  "oneLiner": "",
+  "oneLinerJa": "",
+  "category": "",
+  "targetIndustries": [],
+  "peers": [],
+  "senderName": "",
+  "senderTitle": "",
+  "proofPoints": [],
+  "fictional": false
+}
