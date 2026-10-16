@@ -117,9 +117,9 @@ export default async function Decode({ searchParams }: { searchParams: Promise<{
             <div className="muted">Criteria: currently at the companies above · based in Japan · titles {path.who.titleKeywords.join(", ")} · up to {LIMITS.maxPeoplePerCompany} per company · max {LIMITS.maxPeoplePerRun} people</div>
           </div>
         )}
-        {path && !run && (
+        {path && (!run || run.status === "failed") && (
           <div style={{ marginTop: 6 }}>
-            {staleRun ? `Previous result (${d(staleRun.createdAt)}) is hidden because the evidence or criteria changed. ` : "Not searched yet. "}
+            {run?.status === "failed" ? "The last search failed. " : staleRun ? `Previous result (${d(staleRun.createdAt)}) is hidden because the evidence or criteria changed. ` : "Not searched yet. "}
             {canRun ? <form action={runClay.bind(null, profile.id, path.id)} style={{ display: "inline" }}><button className="btn primary">Find people with Clay</button></form> : "(CLAY_PUBLIC_API_KEY is not set)"}
           </div>
         )}

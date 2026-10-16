@@ -87,7 +87,8 @@ export function peerPlaybook(s: Store, slug: string): PeerPlaybook | null {
   const steps: PeerStep[] = [];
   for (const id of ids) {
     const e = s.evidence.find((x) => x.id === id);
-    const sig = s.signals.filter((x) => x.evidenceId === id).sort((x, y) => y.createdAt.localeCompare(x.createdAt))[0];
+    const sigs = s.signals.filter((x) => x.evidenceId === id).sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+    const sig = sigs.find((x) => a?.signalStatus[x.signal]?.evidenceIds.includes(id)) ?? sigs[0];
     if (!e || !sig || sig.status === "unconfirmed") continue;
     const kind = String(sig.detail?.partner_type ?? sig.detail?.presence_kind ?? "") || undefined;
     const k = `${sig.signal}|${kind}|${e.title.slice(0, 24)}`;
@@ -184,9 +185,9 @@ const PATH_DEF: Record<PathId, Omit<EntryPath, "peers" | "fit" | "caveats" | "wh
     label: "Local entity + direct sales",
     labelJa: "日本に拠点を置いて直接売る",
     summary: "Set up a Japan entity or office, hire Japan sales, and sell directly to your target industries.",
-    match: (x) => x.signal === "jobs" || (x.signal === "local_presence" && (x.kind === "entity" || x.kind === "office")),
+    match: (x) => x.signal === "local_presence" && (x.kind === "entity" || x.kind === "office"),
     titles: ["Head of Digital Transformation", "Customer Experience", "Chief Digital Officer", "CIO"],
-    why: "Your peers set up a Japan entity/office and hired for Japan. Start with digital-transformation and CX leaders at large companies in your target industries.",
+    why: "Your peers set up a Japan entity or office. Start with digital-transformation and CX leaders at large companies in your target industries.",
     caveat: "A job posting is not a completed hire. A registered entity does not mean revenue in Japan.",
     firstAsk: "Is there budget for this problem this fiscal year, and who decides?",
   },
