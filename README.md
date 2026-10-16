@@ -31,16 +31,37 @@ Nimble Extract (monitor)   ┴→ fetch history + snapshot → diff vs previous 
 
 ```bash
 npm install
-cp .env.example .env    # NIMBLE_API_KEY, TYPESAFE_API_KEY (server-side only, never logged)
+cp .env.example .env    # NIMBLE_API_KEY, TYPESAFE_API_KEY, CLAY_PUBLIC_API_KEY (server-side only, never logged)
 APP_MODE=live npx tsx scripts/run-radar.ts     # all companies, or: sierra,cohere
 APP_MODE=live npm run dev                      # http://localhost:3000
 APP_MODE=demo npm run dev                      # no keys: shows the recorded snapshot in data/demo.json
+npm run typecheck && npm run lint && npm test && npm run build
 ```
 Live and demo data are separate files (`data/live.json`, `data/demo.json`).
 
+## Decode Japan (`/decode`)
+
+For an **English-speaking US AI startup** planning to enter Japan. It reads the Radar's evidence about peers that already entered and turns it into four steps. The startup makes every decision; nothing is sent automatically.
+
+1. **Decode the trend** — what each monitored company did in Japan, in date order, with links. Facts and inferences are separate; evidence still waiting for review is shown dashed.
+2. **Decode the path** — compares entry paths (partner-led resale / co-development / local entity + direct sales) using **only the peers you selected**. Each path shows its evidence, why it may fit, and caveats (a partner is not a customer, a job posting is not a hire, …). No confirmed evidence → no path, no Clay run, no draft.
+3. **Decode the people** — Clay Public API search for Japan-side contacts: people **currently at named target companies** (by domain, `clay.filter_to_companies`), based in Japan, with path-specific titles. Max 1 per company, 3 per run.
+4. **Decode the message** — English draft first, plus a Japanese version to send to a Japanese contact. It cites only Radar evidence; anything missing (proof points, sender) stays a visible `[placeholder]`.
+
+Your profile lives in `config/startup-profile.json` (name, one-liner, category, target industries, peers = Radar slugs, sender, proof points). Demo mode shows three fictional startups.
+
+### Clay
+- **Demo**: fictional sample people, labelled as samples; no network calls.
+- **Live**: `CLAY_PUBLIC_API_KEY` (server-side only) → `POST /public/v0/search/query-mode` → `/run`. Results are shown as real Clay results.
+- A run is keyed by its evidence + criteria (`dedupeKey`); the same key is never re-run (also after a timeout). If evidence or criteria change, the old result is hidden, not shown as current. Statuses: queued / running / complete / partial / failed / skipped (not enough evidence). "Not found" is not "failed".
+- Limits: max 3 people per run, 1 per company, daily run cap (`LIMITS` in `src/lib/decode.ts`). The free plan allows about 100 searches per 30 days.
+- **Clay results are never Radar evidence.** Profiles may be stale or out of scope, and being in Japan doesn't mean owning the decision.
+- Findings from live tests (2026-10-16): searching by industry alone returned loosely related people; naming the target companies returned relevant alliance/partnership leads at two of five. The other three returned no one. LinkedIn coverage of Japanese enterprises is thin, and Japanese titles don't map cleanly to English ones.
+- Not yet: work-email enrichment (shown as "Not fetched"), Japanese-title search, non-LinkedIn sources.
+
 ## Stack
-Next.js (App Router) + TypeScript · Nimble Node SDK `@nimble-way/nimble-js` · TypeSafe Jev SDK `@typesafe-ai/sdk` · JSON file store.
+Next.js (App Router) + TypeScript · Nimble Node SDK `@nimble-way/nimble-js` · TypeSafe Jev SDK `@typesafe-ai/sdk` · Clay Public API · JSON file store · Vitest.
 
 ## Verified / not yet
 - Verified (2026-10-11): live Nimble search + extract → Jev → readout for all 5 companies (~2 min, 21 Nimble + ~130 Jev calls). Second run: unchanged pages create no duplicate evidence, judgments or feed items.
-- Not yet (hackathon MVP): add/edit companies and URLs from the UI (config file for now), review/correction buttons, automated tests, weekly scheduler (run the script from cron).
+- Not yet (hackathon MVP): add/edit companies and URLs from the UI (config file for now), review/correction buttons, weekly scheduler (run the script from cron).
