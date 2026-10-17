@@ -1,7 +1,22 @@
-# Japan GTM Radar / 日本GTMレーダー
+# Japan GTM Radar
 
-Continuously observes how overseas AI startups show interest in, invest in, and sell into the Japanese market, and turns that into an **evidence-backed GTM readout**.
-海外AIスタートアップの日本市場への関心・投資・事業展開を継続観測し、根拠付きのGTMヨミ表を作るMVP。
+**Decode Japan for US AI startups.** Japan GTM Radar continuously watches how overseas AI startups enter the Japanese market — Japanese-language pages, job boards, partner announcements, corporate registrations — and turns those signals into an **evidence-backed GTM readout**. Then Clay finds the Japan-side people to meet, and the Radar drafts what to say.
+
+The point is to collect *signals*, not to write a new answer every time: every claim links to a source, facts and inferences are kept apart, and unknowns stay visible.
+
+| Step | What you get | Powered by |
+|---|---|---|
+| 1. Decode the trend | What peers did in Japan, in date order, with sources | Nimble (search, extract, diff) + Jev (typed judgments) |
+| 2. Decode the path | Entry paths that may fit you (partner-led resale / co-development / local entity) with caveats | Radar evidence + rules |
+| 3. Decode the people | Named Japan-side companies and the people to meet there | Clay Public API |
+| 4. Decode the message | English draft + Japanese version, citing only evidence; nothing is sent | Radar evidence |
+
+Quick start (no API keys needed):
+
+```bash
+npm install
+npm run dev:demo        # http://localhost:3000/decode
+```
 
 Initial targets: Sierra, Corgi, Braintrust, Cohere, ElevenLabs (`config/companies.json`).
 
