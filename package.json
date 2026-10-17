@@ -1,7 +1,7 @@
 {
   "name": "japan-gtm-radar",
   "version": "1.0.0",
-  "description": "Japan GTMレーダー: 海外AIスタートアップの日本市場GTMを根拠付きで観測するMVP",
+  "description": "Japan GTM Radar: decode how overseas AI startups enter Japan, with evidence (Nimble + Jev + Clay)",
   "scripts": {
     "dev": "next dev",
     "dev:demo": "APP_MODE=demo next dev",
@@ -11,12 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:setup": "tsx scripts/db-setup.ts",
-    "seed": "tsx scripts/seed.ts",
-    "demo:reset": "tsx scripts/demo-reset.ts",
-    "radar:run": "tsx scripts/run-radar.ts",
-    "radar:smoke": "tsx scripts/smoke-live.ts",
-    "calibrate": "tsx scripts/calibrate.ts"
+    "radar:run": "tsx scripts/run-radar.ts"
   },
   "repository": {
     "type": "git",
